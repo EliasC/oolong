@@ -1,3 +1,6 @@
+OOlong
+======
+
 This repository contains the Ott and Coq sources for OOlong, a
 concurrent object calculus for modelling object-oriented
 languages. The calculus was first presented in the article
