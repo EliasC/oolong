@@ -1,0 +1,777 @@
+embed
+{{ tex-preamble
+\usepackage{latexsym}
+\usepackage{amssymb}
+\providecommand{\kw}[1]{\texttt{\textbf{#1}%
+}%in
+}
+\providecommand{\startblock}{\texttt{\symbol{123}%
+}%
+}
+\providecommand{\finishblock}{\texttt{\symbol{125}%
+}%
+}
+\renewcommand{\bfdefault}{b}
+\renewcommand{\mathbf}{\textbf}
+\providecommand{\ottlinebreakhack}{}
+%% defining the tex representation in ott allows us to also use the
+%% macros in the paper:
+}}
+
+metavar x,
+y,
+f,
+this {{ tex \kw{this} }} ::= {{ com Variable and Field Names }}
+metavar C ::= {{ com Class name }}
+metavar I ::= {{ com Interface name }}
+metavar m ::= {{ com Method Name }}
+metavar l {{ tex \iota }} ::= {{ com Heap Location }}
+metavar g {{ tex \gamma }} ::= {{ com Environment domain }}
+
+indexvar i, n ::=
+
+grammar
+
+P :: p_ ::= {{ com Program }}
+  | Ids Cds e :: :: Program
+
+Cd :: c_ ::= {{ com Class declaration }}
+  | class C implements I { Fds Mds } :: :: Class
+
+Fd :: f_ ::= {{ com Field declaration }}
+  | f : t :: :: Field
+
+Id :: i_ ::= {{ com Interface def }}
+  | interface I { Msigs } :: :: Interface
+  | interface I extends I1 , I2 :: :: Interface_extend
+
+Msig :: msig_ ::= {{ com Method signature }}
+  | m ( x : t1 ) : t2 :: :: sig
+
+Md :: m_ ::= {{ com Method def }}
+  | def Msig { e } :: :: Method
+
+e :: e_ ::= {{ com Expression }}
+  | let x = e1 in e2                       :: :: Let {{ tex [[let]] [[x]] = [[e1]]~\kw{in}~[[e2]] }}
+  | x.m ( e )                              :: :: MethodCall
+  | x                                      :: :: Variable
+  | x . f                                  :: :: Field
+  | x . f = e                              :: :: Update
+  | new C                                  :: :: Instantiation
+  | ( t ) e                                :: :: Cast
+  | v                                      :: :: Value
+  | finish { async { e1 } async { e2 } } ; e3 :: :: Finish
+  | lock( x ) in e                         :: :: Lock {{ tex \kw{lock} ([[x]]) \kw{\,in\,} [[e]] }}
+  | locked( l ) { e }                      :: :: Locked {{ tex \kw{locked}_{[[l]]} \{ [[e]] \} }}
+  | E [ e ]                                :: :: Context {{ tex E[ [[e]] ]}}
+
+v :: v_ ::= {{ com Value }}
+  | null :: :: Value
+  | l    :: :: Location
+
+E {{ tex E[~] }} :: ec_ ::= {{ com Evaluation context }}
+  | let x = E in e       :: :: a  {{ tex [[let]] [[x]] = [[E]]  \kw{\,in\,} [[e]] }}
+  | x.m( E )             :: :: d
+  | x.f = E              :: :: e
+  | ( t ) E              :: :: f
+  | locked( l ) { E }   :: :: g
+
+t :: t_ ::= {{ com Types }}
+  | C             :: :: Class
+  | I             :: :: Type
+  | Unit          :: :: Unit
+
+Cds :: '' ::= {{ com Classes }}
+| Cd1 , .. , Cdn :: :: Classes
+
+Ids :: '' ::= {{ com Traits }}
+| Id1 , .. , Idn :: :: Traits
+
+Fds :: '' ::= {{ com Fields }}
+| Fd1 , .. , Fdn           :: :: Fields
+
+Msigs :: '' ::= {{ com Method signatures }}
+| Msig1 , .. , Msign :: :: Signatures
+
+Mds {{ tex \mathit{Mds} }} :: '' ::=
+| Md1 , .. , Mdn :: :: Methods
+
+F :: '' ::= {{ com Fields }}
+| f1 ~> v1 , .. , fn ~> vn :: :: Field
+
+lockStatus {{ tex L }} :: '' ::= {{ com Lock status }}
+| locked :: :: locked
+| unlocked :: :: unlocked
+
+obj :: '' ::= {{ com Object }}
+| ( C , F , lockStatus ) :: :: Object {{ tex ([[C]], [[F]], [[lockStatus]])}}
+
+H :: '' ::= {{ com Heap }}
+| eps         :: :: Empty  {{ tex \epsilon }}
+| H , l ~> obj :: :: LocObjMap
+
+V :: '' ::= {{ com Variables }}
+| eps        :: :: NoVars {{ tex \epsilon }}
+| V , x ~> v :: :: VarValueMap
+
+G {{ tex \Gamma }} :: 'Environment' ::= {{ com Environment }}
+| eps       :: :: Environment {{ tex \epsilon }}
+| [ G ]     :: :: OTT_HACK {{ tex [[G]] }}
+| G , x : t :: :: Variable
+| G , l : C :: :: Location
+| x : t     :: :: SingleVar
+| l : C     :: :: SingleLoc
+
+Ls {{ tex \mathcal{L} }} :: '' ::= {{ com Held locks }}
+| none :: :: empty {{ tex \emptyset }}
+| l1 , .. , ln :: :: locks
+
+T :: '' ::= {{ com Threads }}
+| ( Ls , e ) :: :: thread
+| T1 || T2 |> e :: :: async {{ tex [[T1]] \mathop{||} [[T2]] \rhd [[e]] }}
+| EXN :: :: Exception
+
+EXN {{ tex \textbf{EXN} }}:: '' ::= {{ com Exceptions }}
+| NullPointerExceptionX :: :: NPEX {{ tex \textbf{NullPointerException} }}
+| NullPointerException :: :: NPE {{ tex \textbf{NPE} }}
+
+cfg :: '' ::= {{ com Configuration }}
+| < H ; V ; T > :: :: cfg
+
+step {{ tex \hookrightarrow }} :: 'eval_' ::= {{ com Step relation }}
+| ~~> :: :: step
+
+formula :: formula_ ::=
+| judgement :: :: judgement
+| ( formula ) :: :: formalia
+| not formula :: :: not
+| </ formulai // , // i /> :: :: Many
+| formula1 \/ formula2     :: :: Or
+| formula1 /\ formula2     :: :: And
+| formula1 ==> formula2    :: :: Implication
+| formula1 <==> formula2   :: :: iff
+| forall quantifier . formula1 :: :: ForAll1
+| lookup :: :: lookup
+| subst  :: :: subst
+| proposition :: :: proposition
+| formula \\\\ :: :: lbh {{ tex [[formula]] \ottlinebreakhack }}
+| < formula > \\\\ :: :: lbh2 {{ tex [[formula]] \ottlinebreakhack }}
+| formula NS  :: :: negspace1 {{ tex [[formula]] \! }}
+| formula MNS :: :: negspace2 {{ tex [[formula]] \!\!\! }}
+| < formula > MNS :: :: negspace4 {{ tex [[formula]] \!\!\! }}
+
+lookup :: 'l_' ::=
+| class C implements I { _ } in P :: :: class
+| interface I { _ } in P     :: :: interface
+| interface I extends I1 , I2 in P :: :: interface_extends
+| G ( x ) = t               :: :: env_var
+| G ( l ) = t               :: :: env_loc
+| G ( g ) = t               :: :: env_abs
+| V ( x ) = v               :: :: varmap
+| H ( l ) = obj             :: :: heap
+| methods ( t ) ( m ) = method_type , e :: :: methods
+| Md in Mds                 :: :: methods2
+| l in heldLocks ( T )      :: :: heldlock
+| msigs ( t ) ( m ) = method_type :: :: sigs
+| x in dom ( G )            :: :: var_membership {{ tex [[x]] \in [[dom]]([[G]]) }}
+| x not_in dom ( G )        :: :: var_nonmembership {{ tex [[x]] \not\in [[dom]]([[G]]) }}
+| l in dom ( G )            :: :: loc_membership {{ tex [[l]] \in [[dom]]([[G]]) }}
+| l not_in dom ( G )        :: :: loc_nonmembership {{ tex [[l]] \not\in [[dom]]([[G]]) }}
+| set ( f ) = t             :: :: field_lookup {{ tex [[set]] ([[f]]) = [[t]] }}
+| set ( f ) = v             :: :: dyn_field_lookup
+| set1 cmp_op set2          :: :: set_equivalence
+| x fresh :: :: var_fresh
+| l fresh :: :: loc_fresh
+| distinctLocks( e ) :: :: distinctLocks
+
+
+subst :: 'subst_' ::=
+| V' = V [ x ~> v ] :: :: var
+| V' = V [ x ~> v ] [ y ~> v' ] :: :: var_double
+| H' = H [ l ~> obj ] :: :: extend
+| H' = H [ l ~> ( C , F [ f ~> v ] , lockStatus ) ] :: :: update_field
+| H' = H [ l ~> ( C , F , RL [ r ~> lockStatus ] ) ] :: :: update_lock
+| e' = e [ x ~> x' ] :: :: expr
+| e' = e [ x ~> x' ] [ y ~> y' ] :: :: expr_double
+
+method_type :: 'ms_' ::=
+| x : t1 --> t2      :: :: type
+
+quantifier :: 'q_' ::=
+| Cd in Cds :: :: class_lookup
+| Id in Ids :: :: interface_lookup
+| x : t in G :: :: variable_lookup
+| l : C in G :: :: location_lookup
+| g : t in G :: :: abs_lookup
+| l in dom ( H ) :: :: heap_lookup
+| content in set :: :: set
+
+set :: 'set_' ::=
+| ( set )         :: :: parenthesised
+| set1 U set2     :: :: set_union
+| set1 & set2     :: :: set_intersection
+| dom ( G )       :: :: dom_G
+| vardom ( G )    :: :: vardom_G
+| dom ( V )       :: :: V
+| fields ( t )    :: :: fields_t
+| msigs ( t )     :: :: msigs_t
+| Mds             :: :: methods
+| Msigs           :: :: msigs
+| Fds             :: :: fields
+| { content }     :: :: set_literal          {{ tex \{ [[content]] \} }}
+| Ls              :: :: locks
+| heldLocks ( T ) :: :: heldLocks
+| locks ( e )     :: :: e_locks
+| F               :: :: dyn_fields
+| emptyset        :: :: emptyset {{ tex \emptyset }}
+| set1 \ set2     :: :: set_subtraction
+
+content :: 'c' ::=
+| x              :: :: singleton_var
+| l              :: :: singleton_location
+| f : t          :: :: singleton_field_type
+| Fd1 , .. , Fdn :: :: fields
+| L              :: :: lock
+| Md             :: :: method
+| Msig           :: :: msig
+
+proposition :: 'p_' ::=
+| l in Ls :: :: lock_inclusion
+| l notin Ls :: :: lock_non_inclusion
+| e = e' :: :: expr_equality
+
+terminals :: 'terminals_' ::=
+| class       :: :: class       {{ tex \kw{class} }}
+| interface   :: :: interface   {{ tex \kw{interface} }}
+| implements  :: :: implements  {{ tex \kw{implements} }}
+| extends     :: :: extends     {{ tex \kw{extends} }}
+| let         :: :: let         {{ tex \kw{let}\,   }}
+| Unit        :: :: unit        {{ tex \kw{Unit} }}
+| def         :: :: def         {{ tex \kw{def}   }}
+| new         :: :: new         {{ tex \kw{new}   }}
+| finish      :: :: finish      {{ tex \kw{finish} }}
+| async       :: :: async       {{ tex \kw{async} }}
+| null        :: :: null        {{ tex \kw{null}  }}
+| lock        :: :: lock       {{ tex \kw{lock}   }}
+| in          :: :: in          {{ tex \!\!\in\! }}
+| not :: :: not          {{ tex \neg }}
+| ~> :: :: mapsto       {{ tex \mapsto }}
+| |> :: :: finish_symb  {{ tex \rhd }}
+| ~~> :: :: step         {{ tex \hookrightarrow }}
+| --> :: :: funarrow       {{ tex \rightarrow }}
+| |-> :: :: maparrow       {{ tex \mapsto }}
+| |- :: :: turnstile    {{ tex \vdash }}
+| |-lock :: :: turnstile_lock    {{ tex \vdash_{\mbox{\tiny lock} } }}
+| \/  :: :: or      {{ tex \lor }}
+| /\  :: :: and     {{ tex \land }}
+| ==> :: :: implies {{ tex \Rightarrow }}
+| <==> :: :: iff {{ tex \Leftrightarrow }}
+| notin :: :: notin {{ tex \not\in }}
+| forall :: :: forall {{ tex \forall }}
+| notexists :: :: notexists {{ tex \nexists }}
+| notforall :: :: notforall {{ tex \not\forall }}
+| U        :: :: set_union {{ tex \cup }}
+| &        :: :: set_intersection {{ tex \cap }}
+| < :: :: langle {{ tex \langle }}
+| > :: :: rangle {{ tex \rangle }}
+| { :: :: lbrace {{ tex \,\startblock\, }}
+| } :: :: rbrace {{ tex \,\finishblock\, }}
+| ++ :: :: plus  {{ tex + }}
+| <= :: :: subset  {{ tex \subseteq }}
+| >= :: :: gt  {{ tex \geq }}
+
+cmp_op :: cmp_ ::=
+| ===  :: :: Equiv    {{ tex \equiv }}
+| ==   :: :: Equal    {{ tex = }}
+| =/= :: :: NotEqual {{ tex \neq }}
+| <= :: :: subset_of {{ tex \subset }}
+
+defns Dynamics :: 'dyn_' ::=
+
+defn cfg step cfg' :: :: eval :: '' by
+
+%% == Parallelism ========================
+
+<H; V; T1> ~~> <H'; V'; T1'>
+-------------------------------------------------------- :: eval_async_left
+<H; V; T1 || T2 |> e> ~~> <H'; V'; T1' || T2 |> e>
+
+
+<H; V; T2> ~~> <H'; V'; T2'>
+--------------------------------------------------------- :: eval_async_right
+<H; V; T1 || T2 |> e> ~~> <H'; V'; T1 || T2' |> e>
+
+
+
+----------------------------------------------------- :: eval_async_join
+<H; V; (Ls, v) || (Ls', v') |> e> ~~> <H; V; (Ls, e)>
+
+
+e = finish{async{e1} async{e2} } ; e3
+-------------------------------------------------------- :: eval_spawn
+<H; V; (Ls, e)> ~~> <H; V; (Ls, e1) || (none, e2) |> e3>
+
+
+<H; V; (Ls, e)> ~~> <H; V; (Ls, e1) || (none, e2) |> e3>
+------------------------------------------------------------ :: eval_spawn_context
+<H; V; (Ls, E[e])> ~~> <H; V; (Ls, e1) || (none, e2) |> E[e3]>
+
+
+%% == Expressions ========================
+
+<H; V; (Ls, e)> ~~> <H'; V'; (Ls', e')>
+-------------------------------------------------- :: eval_context
+<H; V; (Ls, E[e])> ~~> <H'; V'; (Ls', E[e'])>
+
+
+-------------------------------------------- :: eval_cast
+<H; V; (Ls, (t) v)> ~~> <H; V; (Ls, v)>
+
+
+H(l) = (C, F, lockStatus)
+C <: t
+-------------------------------------------- :: eval_downcast
+<H; V; (Ls, (t) l)> ~~> <H; V; (Ls, l)>
+
+
+t2 <: t
+-------------------------------------------- :: eval_upcast
+<H; V; (Ls, (t) l)> ~~> <H; V; (Ls, l)>
+
+
+--------------------------------------------- :: eval_cast_null
+<H; V; (Ls, (t) null)> ~~> <H; V; (Ls, null)>
+
+
+x' fresh
+V' = V[x' ~> v]
+e' = e[x ~> x']
+---------------------------------------------------------- :: eval_let
+<H; V; (Ls, let x = v in e)> ~~> <H; V'; (Ls, e')>
+
+
+V(x) = l
+H(l) = (C, F, lockStatus) \\\\
+methods(C)(m) = y : t2 --> t, e \\\\
+this' fresh
+y' fresh \\\\
+V' = V[this' ~> l][y' ~> v] \\\\
+e' = e[this ~> this'][y ~> y']
+------------------------------------------------------- :: eval_call
+<H; V; (Ls, x.m(v))> ~~> <H; V'; (Ls, e')>
+
+
+V(x) = l
+H(l) = (C, F, unlocked)
+l notin Ls \\\\
+H' = H[l ~> (C, F, locked)]
+Ls' === Ls U {l}
+------------------------------------------------------------------- :: eval_lock
+<H; V; (Ls, lock(x) in e)> ~~> <H'; V; (Ls', locked(l){e})>
+
+
+V(x) = l
+H(l) = (C, F, locked)
+l in Ls
+-------------------------------------------------- :: eval_lock_reentrant
+<H; V; (Ls, lock(x) in e)> ~~> <H; V; (Ls, e)>
+
+
+H(l) = (C, F, locked)
+< Ls' === Ls \ {l} > \\\\
+H' = H[l ~> (C, F, unlocked)]
+----------------------------------------------------- :: eval_lock_release
+<H; V; (Ls, locked(l){v})> ~~> <H'; V; (Ls', v)>
+
+
+V(x) = v
+----------------------------------- :: eval_var
+<H; V; (Ls, x)> ~~> <H; V; (Ls, v)>
+
+
+V(x) = v
+V' = V[x ~> null]
+----------------------------------- :: eval_consume
+<H; V; (Ls, x)> ~~> <H; V'; (Ls, v)>
+
+
+V(x) = l
+H(l) = (C, F, lockStatus) \\\\
+fields(C)(f) = t
+F(f) = v
+------------------------------------------------- :: eval_select
+<H; V; (Ls, x.f)> ~~> <H; V; (Ls, v)>
+
+
+V(x) = l
+H(l) = (C, F, lockStatus) \\\\
+fields(C)(f) = t'
+H' = H[l ~> (C, F[f ~> v], lockStatus)]
+------------------------------------------------------ :: eval_update
+<H; V; (Ls, x.f = v)> ~~> <H'; V; (Ls, null)>
+
+
+<fields(C) === f1 : t1, .., fn : tn> \\\\
+<F === f1 ~> null, .., fn ~> null> \\\\
+l fresh
+H' = H[l ~> (C, F, unlocked)]
+--------------------------------------------------------------- :: eval_new
+<H; V; (Ls, new C)> ~~> <H'; V; (Ls, l)>
+
+
+%% == Exceptions ============
+
+V(x) = null
+-------------------------------------------------- :: npe_select
+<H; V; (Ls, x.f)> ~~> <H; V; NullPointerException>
+
+
+V(x) = null
+------------------------------------------------------ :: npe_update
+<H; V; (Ls, x.f = v)> ~~> <H; V; NullPointerException>
+
+
+V(x) = null
+----------------------------------------------------- :: npe_call
+<H; V; (Ls, x.m(v))> ~~> <H; V; NullPointerException>
+
+
+V(x) = null
+--------------------------------------------------------------- :: npe_lock
+<H; V; (Ls, lock(x) in e)> ~~> <H; V; NullPointerException>
+
+
+<H; V; (Ls, e)> ~~> <H'; V'; EXN>
+-------------------------------------- :: exception_context
+<H; V; (Ls, E[e])> ~~> <H'; V'; EXN>
+
+
+-------------------------------------- :: exception_async_left
+<H; V; EXN || T2 |> e> ~~> <H; V; EXN>
+
+
+-------------------------------------- :: exception_async_right
+<H; V; T1 || EXN |> e> ~~> <H; V; EXN>
+
+defns Types :: 't_' ::=
+
+defn t1 <: t2 :: :: sub :: '' {{ tex [[t1]] <: [[t2]] }} {{ com Subtyping }} by
+
+class C implements I {_} in P
+----------------------------- :: sub_class
+C <: I
+
+
+interface I extends I1 , I2 in P
+-------------------------- :: sub_interface_left
+I <: I1
+
+
+interface I extends I1 , I2 in P
+-------------------------- :: sub_interface_right
+I <: I2
+
+
+t1 <: t2
+t2 <: t3
+-------- :: sub_trans
+t1 <: t3
+
+
+|- t
+------ :: sub_eq
+t <: t
+
+
+defn |- t :: :: wfType :: 'wf_' by
+
+class C implements I { _ } in P
+------------------------------- :: class
+|- C
+
+interface I { _ } in P
+---------------------- :: interface
+|- I
+
+interface I extends I1 , I2 in P
+-------------------------- :: interface_extends
+|- I
+
+
+-------------------------- :: unit
+|- Unit
+
+
+%% = Environment & Well-Formedness ==================================================
+
+defns Wellformedness :: 'wf_' ::=
+
+defn |- G :: :: Env :: '' by
+
+
+forall x : t in G . |- t
+forall l : C in G . |- C
+------------------------ :: env
+|- G
+
+defn G <= G' :: :: Subsumption :: '' by
+
+forall g : t in G . G'(g) = t
+----------------------------- :: subsumption
+G <= G'
+
+defn G1 = G2 ++ G3  :: :: Frame :: '' by
+
+< forall g : t in G2 . G1 ( g ) = t > \\\\
+< forall g : t in G3 . G1 ( g ) = t > \\\\
+( vardom ( G2 ) & vardom ( G3 ) ) === emptyset
+---------------------------------------------------------------------------------------------- :: frame
+G1 = G2 ++ G3
+
+% = Expressions ======================================================
+
+defn G |- e : t :: :: Expression :: '' by
+
+G |- e : t'
+t' <: t
+-------------- :: cast
+G |- (t) e : t
+
+
+G |- e1 : t1
+G , x : t1 |- e2 : t
+----------------------------- :: let
+G |- let x = e1 in e2 : t
+
+
+G(x) = t1
+G |- e : t2 \\\\
+msigs ( t1 ) ( m ) = y : t2 --> t
+--------------------------------- :: call
+G |- x.m ( e ) : t
+
+
+|- G              MNS
+G ( x ) = t       MNS
+--------------------- :: var
+G |- x : t
+
+
+|- G
+G ( l ) = C
+C <: t
+------------- :: loc
+G |- l : t
+
+
+|- G
+|- t
+------------- :: null
+G |- null : t
+
+
+G |- x : C \\\\
+fields ( C ) ( f ) = t
+------------------------------ :: select
+G |- x . f : t
+
+
+G |- x : C
+G |- e : t \\\\
+fields ( C ) ( f ) = t
+----------------------------- :: update
+G |- x . f = e : Unit
+
+
+|- G
+class C implements I { _ } in P
+------------------------------- :: new
+G |- new C : C
+
+
+G = G1 ++ G2
+G1 |- e1 : t1
+G2 |- e2 : t2
+G |- e : t
+------------------------------------------------- :: fj
+G |- finish { async { e1 } async { e2 } } ; e  : t
+
+
+G |- x : t2
+G |- e : t MNS
+---------------------------- :: lock
+G |- lock(x) in e : t
+
+
+G |- e : t
+G(l) = t2
+-------------------------- :: locked
+G |- locked(l){e} : t
+
+
+defn G |- H :: :: Heap :: '' by
+
+
+< forall l : C in G . H(l) = (C, F, lockStatus) /\ G; C |- F> \\\\
+forall l in dom(H) . l in dom(G)
+|- G
+--------------------------------------------------- :: heap
+G |- H
+
+
+defn G ; C |- F :: :: Fields :: '' by
+
+<fields(C) === f1 : t1, .., fn : tn> \\\\
+G |- v1 : t1, .., G |- vn : tn
+---------------------------------------------- :: fields
+G; C |- f1 ~> v1, .., fn ~> vn
+
+
+defn G |- V :: :: Vars :: '' by
+
+
+<forall x : t in G . V(x) = v /\ G |- v : t> \\\\
+forall x in dom(V) . x in dom(G)
+|- G
+------------------------------------------ :: vars
+G |- V
+
+
+defn G |- T : t :: :: Threads :: 't_' by
+
+G |- T1  : t1
+G |- T2 : t2 \\\\
+G |- e : t
+---------------------- :: async
+G |- T1 || T2 |> e : t
+
+
+G |- e : t
+---------------- :: thread
+G |- (Ls, e) : t
+
+
+|- t
+|- G
+------------ :: exn
+G |- EXN : t
+
+
+defn H |-lock T :: :: Locking :: 'l_' by
+
+
+<heldLocks(T1) & heldLocks(T2) === emptyset> \\\\
+<forall l in locks(e) . l in heldLocks(T1)> \\\\
+distinctLocks(e)
+H |-lock T1
+H |-lock T2
+---------------------------------------------- :: async
+H |-lock T1 || T2 |> e
+
+< forall l in Ls . H(l) = (C, F, locked) > \\\\
+distinctLocks(e)
+forall l in locks(e) . l in Ls
+------------------------------------------ :: thread
+H |-lock (Ls, e)
+
+
+------------------------------------------ :: exn
+H |-lock EXN
+
+defn G |- cfg : t :: :: Cfg :: '' by
+
+G |- H
+G |- V \\\\
+G |- T : t
+H |-lock T
+------------------ :: cfg
+G |- <H; V; T> : t
+
+
+defn |- P : t :: :: Program :: '' by
+
+forall Id in Ids . |- Id
+forall Cd in Cds . |- Cd
+eps |- e : t
+------------------------ :: program
+|- Ids Cds e : t
+
+defn |- Id :: :: Interface :: '' by
+
+forall m(x : t) : t' in Msigs . |- t /\ |- t'
+--------------------------------------------- :: interface
+|- interface I {Msigs}
+
+
+|- I1
+|- I2
+------------------------ :: interface_extends
+|- interface I extends I1 , I2
+
+defn |- Cd :: :: Class :: '' by
+
+
+<forall m(x : t) : t' in msigs(I) . def m(x : t) : t' {e} in Mds> \\\\
+forall Fd in Fds . |- Fd
+forall Md in Mds . this : C |- Md
+------------------------------------------------------ ::class
+|- class C implements I {Fds Mds}
+
+defn |- Fd :: :: Field :: '' by
+
+|- t
+------------- :: field
+|- f : t
+
+
+defn G |- Md :: :: Method :: '' by
+
+[this : C, x : t] |- e : t'
+--------------------------------- :: method
+this : C |- def m(x : t) : t' {e}
+
+
+defns Blocked :: 'blocked_' ::=
+
+defn Blocked ( cfg ) :: :: Blocked :: '' by
+
+
+V(x) = l
+H(l) = (C, F, locked) \\\\
+l notin Ls
+--------------------------------------- :: locked
+Blocked(<H; V; (Ls, lock(x) in e)>)
+
+
+
+Blocked(<H; V; (Ls, e)>)
+--------------------------- :: blocked_context
+Blocked(<H; V; (Ls, E[e])>)
+
+
+
+Blocked(<H; V; T1>) \\\\
+Blocked(<H; V; T2>)
+-------------------------------- :: deadlock
+Blocked(<H; V; T1 || T2 |> e>)
+
+
+
+Blocked(<H; V; T1>)
+------------------------------------ :: blocked_left
+Blocked(<H; V; T1 || (Ls, v) |> e>)
+
+
+
+Blocked(<H; V; T2>)
+------------------------------------ :: blocked_right
+Blocked(<H; V; (Ls, v) || T2 |> e>)
+
+
+defns Done :: '' ::=
+
+defn isDone ( T ) :: :: isDone :: '' by
+
+
+--------------- :: done
+isDone((Ls, v))

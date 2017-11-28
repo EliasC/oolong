@@ -1,0 +1,28 @@
+\begin{tabular}{lcl}
+  $P$ & $::=$ & \Ids~\Cds~$e$ \hfill \textit{(Programs)}\\
+  \Id & $::=$ & \kw{interface} $I$ \SB \Msigs \FB \hfill \textit{(Interfaces)} \\
+      & $|$ & \kw{interface} $I$ \kw{extends} $I_1, I_2$ \\
+  \Cd & $::=$ & \kw{class} $C$ \kw{implements} $I$ \SB \Fds~\Mds \FB \hfill \textit{(Classes)}\\
+  \Msig & $::=$ & $m(x : t_1) : t_2$ \hfill \textit{(Signatures)} \\
+  \Fd & $::=$ & $f : t$ \hfill \textit{(Fields)} \\
+  \Md & $::=$ & \kw{def} \Msig \SB$e$\FB \hfill \textit{(Methods)} \\
+  $e$ & $::=$ & $v$
+        $~|~$ $x$
+        $~|~$ $x.f$
+        $~|~$ $x.f$ \c{=} $e$
+        $~|~$ $x.m(e)$ \hfill \textit{(Expressions)} \\
+      & $~|~$ & \kw{let} $x$ \c{=} $e_1$ \kw{in} $e_2$
+        $~|~$ \kw{new} $C$
+        $~|~$ $(t)~e$ \\
+      & $~|~$ & \kw{finish}\SB \kw{async}\SB$e_1$\FB~\kw{async}\SB$e_2$\FB \FB\c{;} $e_3$ \\
+      & $~|~$ & \kw{lock}$(x)$ \kw{in} $e$
+        $~|~$ \colorbox{lightgray}{\kw{locked}$_\iota$\SB$e$\FB}\\
+  $v$ & $::=$ & \kw{null}
+        $~|~$ \colorbox{lightgray}{$\iota$} \hfill \textit{(Values)} \\
+  $t$ & $::=$ & $C$
+        $~|~$ $I$
+        $~|~$ $\mathbf{Unit}$ \hfill \textit{(Types)} \\
+  $\Gamma$ & $::=$ & $\epsilon$
+             $~|~$ $\Gamma, x : t$
+             $~|~$ \colorbox{lightgray}{$\Gamma, \iota : C$} \hfill \textit{(Typing environment)}
+\end{tabular}

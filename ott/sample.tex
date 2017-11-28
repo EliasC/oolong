@@ -1,0 +1,110 @@
+\documentclass{article}
+
+\usepackage{xcolor, url}
+\usepackage[fleqn]{amsmath}
+
+%% == OTT =======================================================
+\usepackage[supertabular,lineBreakHack]{ottalt}
+\inputott{oolong.ott.tex}
+
+%% == Syntax Macros==============================================
+\newcommand{\npe}{\textbf{NullPointerException}}
+\newcommand{\async}[3]{#1 \mathop{||} #2 \rhd #3}
+\newcommand{\thread}[2]{(#1, #2)}
+\newcommand{\locks}{\ensuremath{\mathcal{L}}}
+\newcommand{\exn}{\textbf{EXN}}
+\newcommand{\cfg}[3]{\langle #1; #2; #3\rangle}
+\newcommand{\Id}{\ensuremath{\mathit{Id}}}
+\newcommand{\Ids}{\ensuremath{\mathit{Ids}}}
+\newcommand{\Cd}{\ensuremath{\mathit{Cd}}}
+\newcommand{\Cds}{\ensuremath{\mathit{Cds}}}
+\newcommand{\Msig}{\ensuremath{\mathit{Msig}}}
+\newcommand{\Msigs}{\ensuremath{\mathit{Msigs}}}
+\newcommand{\Fd}{\ensuremath{\mathit{Fd}}}
+\newcommand{\Md}{\ensuremath{\mathit{Md}}}
+\newcommand{\Fds}{\ensuremath{\mathit{Fds}}}
+\newcommand{\Mds}{\ensuremath{\mathit{Mds}}}
+\newcommand{\SB}{\startblock}
+\newcommand{\FB}{\finishblock}
+\newcommand{\Cfg}{\ensuremath{\mathit{cfg}}}
+\renewcommand{\SB}{\startblock}
+\renewcommand{\FB}{\finishblock}
+
+\renewcommand{\c}[1]{\texttt{#1}}
+\renewcommand{\kw}[1]{\textbf{#1}}
+
+
+\title{Sample Document Using OOlong}
+
+\begin{document}
+
+\maketitle
+
+\section{Examples}
+
+This document exemplifies how to extract the \LaTeX{} version of
+the OOlong semantics from Ott and our hand-written grammars.
+Figure \ref{fig:syntax} shows the syntax of OOlong. The
+corresponding \LaTeX{} code is in \texttt{syntax.tex}. Figure
+\ref{fig:runtime_syntax} shows the syntax of OOlong. The
+corresponding \LaTeX{} code is in \texttt{runtimeSyntax.tex}.
+
+Figure \ref{fig:wf_program} shows the well-formedness rules for
+classes and interfaces. The type rules are generated using the
+\c{\textbackslash drules} command, defined by Ott. It is also
+possible to include single rules without the headers in the
+figure by using the \c{\textbackslash drule} command:\medskip
+
+\drule{wfXXlet}\medskip
+
+The \LaTeX{} sources for the type rules are generated from the
+file \c{oolong.ott} (by running the makefile in this directory).
+They look extra nice because we are using the \c{ottalt}
+package\cite{ottalt}! In order to use the \c{\textbackslash drule}
+and \c{\textbackslash drules} commands, the preamble must contain
+\c{\textbackslash inputott\{oolong.ott.tex\}}.
+
+\begin{figure}
+  \centering
+  \input{syntax.tex}
+  \caption{Syntax of OOlong }
+  \label{fig:syntax}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \input{runtimeSyntax.tex}
+  \caption{Syntax of runtime constructs of OOlong}
+  \label{fig:runtime_syntax}
+\end{figure}
+
+\begin{figure}
+  \drules{$\vdash P:t\quad\vdash\mathit{Id}\quad\vdash\mathit{Cd}\quad\vdash\mathit{Fd}\quad\vdash\mathit{Md}$}
+         {Well-formed program}
+         {wfXXprogram
+         ,wfXXinterface
+         ,wfXXinterfaceXXextends
+         ,wfXXclass
+         ,wfXXfield
+         ,wfXXmethod
+       }
+\caption{Well-formedness of classes and interfaces. }
+  \label{fig:wf_program}
+\end{figure}
+
+\begin{figure}
+  \input{helpers.tex}
+  \caption{Helper functions}
+  \label{fig:helpers}
+\end{figure}
+
+\begin{thebibliography}{}
+
+\bibitem{ottalt}
+  Jesse Tov,
+  The \c{ottalt} \LaTeX{} package:\\
+  \url{http://users.eecs.northwestern.edu/~jesse/code/latex/ottalt/ottalt.pdf}.
+
+\end{thebibliography}
+
+\end{document}

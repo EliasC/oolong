@@ -1,0 +1,43 @@
+\[
+\mathbf{vardom}(\Gamma) = \{x~|~x\in\mathbf{dom}(\Gamma)\}
+\]
+%
+\[
+\mathbf{msigs}(I) =
+\left\{
+\begin{array}{l l}
+Msigs & \mbox{if } \kw{interface}~I\SB \mathit{Msigs} \FB \in P\\
+\mathbf{msigs}(I_1)\cup\mathbf{msigs}(I_2) & \mbox{if } \kw{interface}~I~\kw{extends}~I_1,I_2 \in P\\
+\end{array}
+\right.
+\]
+%
+\[
+\mathbf{msigs}(C) = \{\mathit{Msig}~|~\kw{def}~\mathit{Msig}\SB e \FB \in Mds\}
+\mbox{ if } \kw{class}~C \dots\SB \_~Mds \FB \in P
+\]
+%
+\[
+\mathbf{msigs}(t)(m) = x : t_1 \rightarrow t_2$ \mbox{ if } $m(x : t_1) : t_2 \in \mathbf{msigs(t)}
+\]
+%
+\[
+\mathbf{heldLocks}(T) =
+\left\{
+\begin{array}{l l}
+\mathcal{L} & \mbox{if } T = (\mathcal{L}, e)\\
+\mathbf{heldLocks}(T_1)\cup\mathbf{heldLocks}(T_2) & \mbox{if } T = \async{T_1}{T_2}{e}
+\end{array}
+\right.
+\]
+%
+\[
+\mathbf{locks}(e) = \{\iota~|~\kw{locked}_\iota\SB e' \FB \in e\}
+\]
+%
+\[
+\begin{array}{l}
+\mathit{distinctLocks}(e) \equiv |\mathbf{locks}(e)| = |\mathbf{lockList}(e)|\\
+\quad\mbox{where } \mathbf{lockList}(e) = [\iota~|~\kw{locked}_\iota\SB e' \FB \in e]
+\end{array}
+\]

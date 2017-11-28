@@ -1,0 +1,16 @@
+\begin{tabular}{lcl}
+  \Cfg{} & $::=$ & $\cfg{H}{V}{T}$ \hfill \textit{(Configuration)} \\
+     $H$ & $::=$ & $\epsilon$
+           $~|~$ $H, \iota \mapsto obj$ \hfill \textit{(Heap)} \\
+     $V$ & $::=$ & $\epsilon$
+           $~|~$ $V, x \mapsto v$ \hfill \textit{(Variable map)} \\
+     $T$ & $::=$ & $(\locks, e)$
+           $~|~$ $\async{T_1}{T_2}{e}$
+           $~|~$ \exn \hfill ~~\textit{(Threads)}\\
+   $obj$ & $::=$ & $(C, F, L)$ \hfill \textit{(Objects)}\\
+     $F$ & $::=$ & $\epsilon$
+           $~|~$ $F, f \mapsto v$ \hfill \textit{(Field map)} \\
+     $L$ & $::=$ & $\mathbf{locked}$
+           $~|~$ $\mathbf{unlocked}$ \hfill \textit{(Lock status)}\\
+  $\exn$ & $::=$ & $\npe$ \hfill \textit{(Exceptions)}\\
+\end{tabular}
