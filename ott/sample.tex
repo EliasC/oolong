@@ -57,12 +57,17 @@ figure by using the \c{\textbackslash drule} command:\medskip
 
 \drule{wfXXlet}\medskip
 
+\noindent
 The \LaTeX{} sources for the type rules are generated from the
 file \c{oolong.ott} (by running the makefile in this directory).
 They look extra nice because we are using the \c{ottalt}
 package\cite{ottalt}! In order to use the \c{\textbackslash drule}
 and \c{\textbackslash drules} commands, the preamble must contain
 \c{\textbackslash inputott\{oolong.ott.tex\}}.
+
+Below follows the formal definitions of progress and preservation.
+
+\input{soundness.tex}
 
 \begin{figure}
   \centering

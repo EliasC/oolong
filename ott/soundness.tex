@@ -1,0 +1,28 @@
+\paragraph{Progress}
+
+A well-formed configuration is either done, has thrown an
+exception, has deadlocked, or can take one additional step:
+\[
+  \begin{array}{l}
+    \forall\,\Gamma,\; H,\; V,\; T,\; t \;.\;
+    \Gamma \vdash \cfg{H}{V}{T} : t \implies \\\qquad
+    T = (\mathcal{L}, v) \mathop{\lor}
+    T = \exn{} \mathop{\lor}
+    \mathit{Blocked}(\cfg{H}{V}{T}) \mathop{\lor} \\ \qquad
+    \exists \Cfg', \cfg{H}{V}{T} \hookrightarrow \Cfg'
+  \end{array}
+\]
+
+\paragraph{Preservation}
+
+If $\cfg{H}{V}{T}$ types to $t$ under some environment $\Gamma$,
+and $\cfg{H}{V}{T}$ steps to some $\cfg{H'}{V'}{T'}$, there exists
+an environment subsuming $\Gamma$ which types $\cfg{H'}{V'}{T'}$
+to $t$.
+\[
+  \begin{array}{l}
+    \forall \Gamma,\; H,\; H',\; V,\; V',\; T,\; T',\; t . \\
+    \quad \Gamma \vdash \cfg{H}{V}{T} : t \land \cfg{H}{V}{T} \hookrightarrow \cfg{H'}{V'}{T'} \implies\\
+    \qquad \exists \Gamma' . \Gamma' \vdash \cfg{H'}{V'}{T'} : t \land \Gamma \subseteq \Gamma'
+  \end{array}
+\]
