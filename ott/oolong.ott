@@ -731,7 +731,7 @@ defn G |- Md :: :: Method :: '' by
 this : C |- def m(x : t) : t' {e}
 
 
-defns Blocked :: 'blocked_' ::=
+defns Blocked :: '' ::=
 
 defn Blocked ( cfg ) :: :: Blocked :: '' by
 
@@ -739,7 +739,7 @@ defn Blocked ( cfg ) :: :: Blocked :: '' by
 V(x) = l
 H(l) = (C, F, locked) \\\\
 l notin Ls
---------------------------------------- :: locked
+--------------------------------------- :: blocked_locked
 Blocked(<H; V; (Ls, lock(x) in e)>)
 
 
@@ -752,7 +752,7 @@ Blocked(<H; V; (Ls, E[e])>)
 
 Blocked(<H; V; T1>) \\\\
 Blocked(<H; V; T2>)
--------------------------------- :: deadlock
+-------------------------------- :: blocked_deadlock
 Blocked(<H; V; T1 || T2 |> e>)
 
 
