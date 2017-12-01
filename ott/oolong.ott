@@ -584,7 +584,7 @@ G |- x . f = e : Unit
 
 
 |- G
-class C implements I { _ } in P
+|- C
 ------------------------------- :: new
 G |- new C : C
 
