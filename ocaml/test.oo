@@ -1,0 +1,8 @@
+interface t I {}
+class C implements I {
+  def foo(x : I) : I {
+    this
+  }
+}
+
+let x = new C in let y = new C in x.foo(x)

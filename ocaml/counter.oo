@@ -1,0 +1,39 @@
+interface Counter {
+  add(x : int) : Unit
+  get(x : int) : int
+}
+
+interface Num {}
+
+class int implements Num {
+  def plus(n : int) : int {
+    n
+  }
+}
+
+class Cell implements Counter {
+  cnt : int
+  def add(n : int) : Unit {
+    let cnt = this.cnt in
+      this.cnt = cnt.plus(n)
+  }
+  def get(x : int) : int {
+    this.cnt
+  }
+}
+
+let zero = new int in
+let one = new int in
+let two = new int in
+let cell = new Cell in
+let cell2 = cell in
+let tmp = cell.cnt = zero in
+  finish {
+    async {
+      lock(cell) in cell.add(one)
+    }
+    async {
+      lock(cell2) in cell2.add(two)
+    }
+  };
+  cell.get(null)

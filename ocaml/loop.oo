@@ -1,0 +1,7 @@
+interface I1 {}
+
+interface I2 extends I1, I3
+
+interface I3 extends I2, I1
+
+null
