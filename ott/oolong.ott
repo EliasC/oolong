@@ -222,6 +222,7 @@ set :: 'set_' ::=
 | Ls              :: :: locks
 | heldLocks ( T ) :: :: heldLocks
 | locks ( e )     :: :: e_locks
+| fv ( e )        :: :: e_freevars {{ tex \mathit{fv}([[e]])}}
 | F               :: :: dyn_fields
 | emptyset        :: :: emptyset {{ tex \emptyset }}
 | set1 \ set2     :: :: set_subtraction
@@ -238,7 +239,7 @@ content :: 'c' ::=
 proposition :: 'p_' ::=
 | l in Ls :: :: lock_inclusion
 | l notin Ls :: :: lock_non_inclusion
-| e = e' :: :: expr_equality
+| e cmp_op e' :: :: expr_compare
 
 terminals :: 'terminals_' ::=
 | class       :: :: class       {{ tex \kw{class} }}
@@ -265,6 +266,7 @@ terminals :: 'terminals_' ::=
 | \/  :: :: or      {{ tex \lor }}
 | /\  :: :: and     {{ tex \land }}
 | ==> :: :: implies {{ tex \Rightarrow }}
+| <== :: :: check {{ tex \Leftarrow }}
 | <==> :: :: iff {{ tex \Leftrightarrow }}
 | notin :: :: notin {{ tex \not\in }}
 | forall :: :: forall {{ tex \forall }}
@@ -307,7 +309,7 @@ defn cfg step cfg' :: :: eval :: '' by
 <H; V; (Ls, v) || (Ls', v') |> e> ~~> <H; V; (Ls, e)>
 
 
-e = finish{async{e1} async{e2} } ; e3
+e == finish{async{e1} async{e2} } ; e3
 -------------------------------------------------------- :: eval_spawn
 <H; V; (Ls, e)> ~~> <H; V; (Ls, e1) || (none, e2) |> e3>
 
@@ -573,14 +575,14 @@ G |- null : t
 G |- x : C \\\\
 fields ( C ) ( f ) = t
 ------------------------------ :: select
-G |- x . f : t
+G |- x.f : t
 
 
 G |- x : C
 G |- e : t \\\\
 fields ( C ) ( f ) = t
 ----------------------------- :: update
-G |- x . f = e : Unit
+G |- x.f = e : Unit
 
 
 |- G
@@ -729,6 +731,82 @@ defn G |- Md :: :: Method :: '' by
 [this : C, x : t] |- e : t'
 --------------------------------- :: method
 this : C |- def m(x : t) : t' {e}
+
+
+defns Birectional :: 'bd_' ::=
+
+defn G |- e ==> t :: :: Infer :: 'infer_' by
+
+G |- e <== t
+---------------- :: cast
+G |- (t) e ==> t
+
+
+G |- e1 ==> t1
+G , x : t1 |- e2 ==> t
+----------------------------- :: let
+G |- let x = e1 in e2 ==> t
+
+
+G |- x ==> t1
+G |- e <== t2 \\\\
+msigs ( t1 ) ( m ) = y : t2 --> t
+--------------------------------- :: call
+G |- x.m ( e ) ==> t
+
+
+|- G           MNS
+G(x) = t       MNS
+--------------------- :: var
+G |- x ==> t
+
+
+G |- x ==> C \\\\
+fields ( C ) ( f ) = t
+------------------------------ :: select
+G |- x.f ==> t
+
+
+G |- x ==> C
+G |- e <== t \\\\
+fields ( C ) ( f ) = t
+----------------------------- :: update
+G |- x.f = e ==> Unit
+
+
+|- G
+|- C
+------------------------------- :: new
+G |- new C ==> C
+
+
+fv(e1) & fv(e2) == emptyset
+G |- e1 ==> t1
+G |- e2 ==> t2
+G |- e ==> t
+----------------------------------------------------- :: fj
+G |- finish { async { e1 } async { e2 } } ; e  ==> t
+
+
+G |- x ==> t2
+G |- e ==> t MNS
+---------------------------- :: lock
+G |- lock(x) in e ==> t
+
+
+defn G |- e <== t :: :: Check :: 'check_' by
+
+|- G
+|- t
+---------------- :: null
+G |- null <== t
+
+
+G |- e ==> t'
+t' <: t
+e =/= null
+------------- :: sub
+G |- e <== t
 
 
 defns Blocked :: '' ::=
