@@ -149,56 +149,60 @@ let assertSubtypeOf env sub super =
     raise (TCError ("Type '" ^ showType sub ^
                       "' is not a subtype of '" ^ showType super ^ "'"))
 
-(** [tcExpr env e] typechecks the expression [e] in the
-  environment [env] and returns its type. Raises [TCError] if the
-  expression is not well-formed. *)
-let rec tcExpr env = function
-  | Null -> NullType
+(** [inferType env e] typechecks the expression [e] in the
+   environment [env] and returns its type if it can be inferred.
+   Raises [TCError] if the expression is not well-formed or if the
+   type cannot be inferred. *)
+let rec inferType env = function
   | Var x -> lookupVar env x
   | FieldAccess (x, f) ->
-     let c = tcExpr env (Var x) in
+     let c = inferType env (Var x) in
      lookupField env c f
   | FieldUpdate (x, f, e) ->
-     let c = tcExpr env (Var x) in
+     let c = inferType env (Var x) in
      let t = lookupField env c f in
-     let _ = hasType env e t in
+     let _ = checkType env e t in
      UnitType
   | MethodCall (x, m, e) ->
-     let targetType = tcExpr env (Var x) in
+     let targetType = inferType env (Var x) in
      let MethodSig (_, _, expectedType, resultType) =
        lookupMethodSig env targetType m in
-     hasType env e expectedType
+     let _ = checkType env e expectedType in
+     resultType
   | Let (x, e, body) ->
-     let t = tcExpr env e in
-     tcExpr (extendEnv env x t) body
+     let t = inferType env e in
+     inferType (extendEnv env x t) body
   | New c ->
      let t = resolveType env (UnresolvedType c) in
      (match t with
       | ClassType _ -> t
       | _ ->
          raise (TCError ("Cannot create instance of type: " ^ showType t)))
-  | Cast (t, e) ->
-     hasType env e (resolveType env t)
+  | Cast (t, e) -> checkType env e (resolveType env t)
   | FinishAsync (e1, e2, e3) ->
-     let _ = tcExpr env e1 in
-     let _ = tcExpr env e2 in
+     let _ = inferType env e1 in
+     let _ = inferType env e2 in
      let vars1 = freeVars e1 in
      let vars2 = freeVars e2 in
      (match List.filter (fun x -> List.mem x vars2) vars1 with
       | x :: _ ->
          raise (TCError ("Variable appears in both branches of a fork: " ^ x))
-      | [] -> tcExpr env e3)
+      | [] -> inferType env e3)
   | Lock (x, e) ->
-     let _ = tcExpr env (Var x) in
-     tcExpr env e
+     let _ = inferType env (Var x) in
+     inferType env e
   | Loc _ | Locked _ ->
      raise (TCError "Dynamic constructs cannot be statically typechecked")
+  | _ -> raise (TCError "Cannot infer type. Try adding type annotations to null")
 
-(** [hasType env e t] checks if [e] has type [t] in environment
+(** [checkType env e t] checks if [e] has type [t] in environment
    [env], and otherwise raises [TCError]. *)
-and hasType env e expected =
-  let t = tcExpr env e in
-  assertSubtypeOf env t expected; expected
+and checkType env e expected =
+  match e with
+  | Null -> expected
+  | _ ->
+     let t = inferType env e in
+     assertSubtypeOf env t expected; expected
 
 (** [tcField env f] typechecks the field [f] in environment [env]. *)
 let tcField env (FieldDef (f, t)) = resolveType env t
@@ -207,7 +211,7 @@ let tcField env (FieldDef (f, t)) = resolveType env t
 let tcMethod env (MethodDef (MethodSig (m, x, tx, te), e)) =
   let tx' = resolveType env tx in
   let te' = resolveType env te in
-  hasType (extendEnv env x tx') e te'
+  checkType (extendEnv env x tx') e te'
 
 (** [tcClass env c] typechecks the class definition [c] in
    environment [env]. *)
@@ -254,7 +258,7 @@ let tcInterface env def =
 let tcProgram env (Program (interfaces, classes, e)) =
   let _ = List.map (tcInterface env) interfaces in
   let _ = List.map (tcClass env) classes in
-  tcExpr env e
+  inferType env e
   (* TODO: Check for duplicates *)
 
 (** [typecheck p] typechecks the program p, and returns its type.
