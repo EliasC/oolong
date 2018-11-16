@@ -1,27 +1,33 @@
 open Ast
 open Tables
 
+(** An [EvaluationException] should never be raised, unless there
+   is a bug in the interpreter. *)
 exception EvaluationException of string
 
+(** Values are null or a reference to the heap. *)
 type value =
   | VNull
   | VLoc of location
-
-let toValue = function
-  | Null -> VNull
-  | Loc l -> VLoc l
-  | e -> raise (EvaluationException ("Not a value: " ^ showExpr e))
-
-let fromValue = function
-  | VNull -> Null
-  | VLoc l -> Loc l
 
 let showValue = function
   | VNull -> "null"
   | VLoc l -> string_of_int l
 
+(** [toValue e] converts an expression to a value. *)
+let toValue = function
+  | Null -> VNull
+  | Loc l -> VLoc l
+  | e -> raise (EvaluationException ("Not a value: " ^ showExpr e))
+
+(** [fromValue e] converts a value to an expression. *)
+let fromValue = function
+  | VNull -> Null
+  | VLoc l -> Loc l
+(** [lookupMethod ctable c m] returns the method [m] in class [c].
+   This function assumes that [c] is in the class table [ctable]. *)
 let lookupMethod ctable c m =
-  match lookupClass ctable c with
+  match ClassTable.lookup c ctable with
   | None -> raise (EvaluationException ("No such class: " ^ c))
   | Some (ClassDef(_, _, _, methods)) ->
     let mEq = function MethodDef (MethodSig(m', _, _, _), _) -> m = m' in
@@ -30,6 +36,8 @@ let lookupMethod ctable c m =
      | None ->
         raise (EvaluationException ("No such method in class '" ^ c ^ "': " ^ m))
 
+(** An object on the heap contains its class type, a map from
+   field names to values, and a lock. *)
 module Object = struct
   module FieldMap = Map.Make(String)
   type fieldMap = value FieldMap.t
@@ -71,7 +79,10 @@ module Object = struct
   let isLocked (_, _, l) = l = Locked
 end
 
+(** A heap is a sequence of objects indexed by their location. *)
 module Heap = struct
+  (** Internally, the heap type uses a reference to an array to
+     avoid having to chain the heap through interpretation. *)
   type t = (Object.t array) ref
 
   let empty : t = ref [||]
@@ -90,6 +101,9 @@ module Heap = struct
   let update heap i f = !heap.(i) <- f !heap.(i)
 end
 
+(** The "stack" is a flat map from variable names to values. Apart
+   from lookups and updates, it can generate a fresh name given a
+   name to start from. *)
 module Vars = struct
   module VarMap = Map.Make(String)
   type varMap = value VarMap.t
@@ -117,6 +131,11 @@ module Vars = struct
       x
 end
 
+(** A collection of threads is a tree where the leaves are an
+   exceptional state or an executing expression together with the
+   currently held locks of that thread. The internal nodes
+   represent forks, together with the expression that will execute
+   when both children are done. *)
 module Threads = struct
   type threads =
     | Thread of location list * expr
@@ -129,10 +148,10 @@ module Threads = struct
     | Thread (_, e) -> isVal e
     | NullPointerException _ -> true
     | _ -> false
-  let rec showThreads = function
+  let rec show = function
     | Thread (locks, e) -> "([], " ^ showExpr e ^ ")"
     | ForkJoin (t1, t2, e) ->
-       "(" ^ showThreads t1 ^ " || " ^ showThreads t2 ^
+       "(" ^ show t1 ^ " || " ^ show t2 ^
        " |> " ^ showExpr e ^ ")"
     | NullPointerException e -> "<NullPointerException: " ^ showExpr e ^ ">"
 end
@@ -142,9 +161,19 @@ type obj = Object.t
 type heap = Heap.t
 type vars = Vars.t
 
+(** A runtime configuration is a heap, a variable map and a
+   collection of threads. *)
 type cfg = heap * vars * threads
 
+(** The evaluation context contains functions for extracting the
+   next sub-expression to be evaluated in an expression, and for
+   inserting that sub-expression again. It corresponds to the
+   evaluation context E in the OOlong paper and is used to make
+   the interpreter simpler below. The intuition should be that
+   [insert (extract e) e = e] and that [extract (insert e' e) = e']. *)
 module Context = struct
+  (** A [ContextException] should never be raised, unless there is
+     a bug in the interpreter. *)
   exception ContextException of string
   let rec extract = function
     | Null
@@ -191,8 +220,17 @@ module Context = struct
     | Locked (l, e') -> Locked (l, insert v e')
 end
 
+(** A [BlockedException] is thrown when a thread cannot progress
+   due to blocking on a lock. If this exception reaches the
+   top-level thread, the whole system is deadlocked. *)
 exception BlockedException
 
+(** [reduce ctable h v l e] reduces the expression [e] one step in
+   a thread executing with [h], [v] and [l] as the heap, variables
+   and held locks. [ctable] is the class table of the current
+   program. The function assumes that [e] can be directly reduced
+   without reducing sub-expressions. It returns the resulting
+   thread, which may also be an exceptional state or a fork. *)
 let reduce
       (ctable : classTable)
       (heap : Heap.t) (vars : Vars.t) locks = function
@@ -232,7 +270,7 @@ let reduce
      Vars.update vars x' (toValue v);
      Thread (locks, subst x x' body)
   | New c ->
-     let ClassDef(_, _, fields, _) = ClassTable.find c ctable in
+     let ClassDef(_, _, fields, _) = ClassTable.get c ctable in
      let l = Heap.alloc heap c fields in
      Thread (locks, Loc l)
   | Cast (_, v) -> Thread (locks, v)
@@ -257,8 +295,14 @@ let reduce
   | FinishAsync (e1, e2, e3) ->
      Threads.fork (Thread(locks, e1)) e2 e3
 
+(** [reduceThreads ctable h v s t] reduces the thread collection
+   [t] one step with [h] and [v] as the heap and variable map.
+   [ctable] is the class table of the current program. [s] is a
+   scheduler function which returns true or false depending on
+   which thread in a fork should be scheduled next. *)
 let rec reduceThreads ctable heap vars scheduler = function
   | Thread (locks, e) ->
+     (* Extract the next sub-expression to reduce *)
      let sub = Context.extract e in
      (match reduce ctable heap vars locks sub with
       | Thread (locks', sub') ->
@@ -268,10 +312,12 @@ let rec reduceThreads ctable heap vars scheduler = function
          let e' = Context.insert sub' e in
          ForkJoin (t1, t2, e')
       | NullPointerException e -> NullPointerException e)
+  (* Propagate exceptions *)
   | ForkJoin (NullPointerException e, _, _) ->
      NullPointerException e
   | ForkJoin (_, NullPointerException e, _) ->
      NullPointerException e
+  (* If one thread in a fork is done, reduce the other one *)
   | ForkJoin (Thread(locks, v) as t1, t2, e) when isDone t1 ->
      if isDone(t2) then
        Thread (locks, e)
@@ -281,6 +327,7 @@ let rec reduceThreads ctable heap vars scheduler = function
   | ForkJoin (t1, (Thread(locks, v) as t2), e) when isDone t2 ->
      let t1' = reduceThreads ctable heap vars scheduler t1 in
      ForkJoin (t1', t2, e)
+  (* Let the scheduler pick which thread in a fork to run *)
   | ForkJoin (t1, t2, e) ->
      if scheduler () then
        tryFirstThread ctable heap vars scheduler t1 t2 e
@@ -306,10 +353,19 @@ and trySecondThread ctable heap vars scheduler t1 t2 e =
      let t1' = reduceThreads ctable heap vars scheduler t1 in
      ForkJoin (t1', t2, e)
 
+(** Running a program that does not go into an infinite loop
+   either results in a configuration that is done, or one that has
+   deadlocked. *)
 type result =
   | Done of cfg * int
   | Blocked of cfg * int
 
+(** [evalLoop dbg ctable h v t s steps] runs the threads [t] to
+   completion or deadlock (or loops forever) with [h] and [v] as
+   heap and variable map. [ctable] is the class table of the
+   current program. [s] is a scheduler function (see
+   [reduceThreads]). [dbg] toggles debug printing. [steps] is the
+   accumulated number of steps taken so far. *)
 let rec evalLoop
           (debug : bool)
           (ctable : classTable)
@@ -321,13 +377,15 @@ let rec evalLoop
   else
     try
       let threads' = reduceThreads ctable heap vars scheduler threads in
-      if debug then print_string (showThreads threads' ^ "\n");
+      if debug then print_string (show threads' ^ "\n");
       evalLoop debug ctable heap vars threads' scheduler (steps + 1)
     with
     | BlockedException -> Blocked ((heap, vars, threads), steps)
 
+(** [interpret p s dbg] interprets the program [p], using [s] as
+   the scheduler function. [dbg] toggles debug printing. *)
 let interpret (Program(_, classes, e)) scheduler debug =
-  let ctable = Tables.buildClassTable classes in
+  let ctable = ClassTable.build classes in
   let heap = Heap.empty in
   let vars = Vars.empty in
   let thread = Threads.make e in

@@ -34,7 +34,7 @@ exception TCError of string
   not defined. *)
 let lookupClass env c = match env with
   | Env (_, ctable, _) ->
-     match Tables.lookupClass ctable c with
+     match ClassTable.lookup c ctable with
      | Some def -> def
      | None -> raise (TCError ("Unknown class: " ^ c))
 
@@ -43,7 +43,7 @@ let lookupClass env c = match env with
   interface is not defined. *)
 let lookupInterface env i = match env with
   | Env (itable, _, _) ->
-     match Tables.lookupInterface itable i with
+     match InterfaceTable.lookup i itable with
      | Some def -> def
      | None -> raise (TCError ("Unknown interface: " ^ i))
 
@@ -145,9 +145,7 @@ let rec isSubtypeOf env sub super =
 (** [assertSubtypeOf env sub super] raises a [TCError] if [sub]
   is not a subtype of [super] in the program defined by [env]. *)
 let assertSubtypeOf env sub super =
-  if isSubtypeOf env sub super then
-    ()
-  else
+  if not (isSubtypeOf env sub super) then
     raise (TCError ("Type '" ^ showType sub ^
                       "' is not a subtype of '" ^ showType super ^ "'"))
 
@@ -196,17 +194,23 @@ let rec tcExpr env = function
   | Loc _ | Locked _ ->
      raise (TCError "Dynamic constructs cannot be statically typechecked")
 
+(** [hasType env e t] checks if [e] has type [t] in environment
+   [env], and otherwise raises [TCError]. *)
 and hasType env e expected =
   let t = tcExpr env e in
   assertSubtypeOf env t expected; expected
 
+(** [tcField env f] typechecks the field [f] in environment [env]. *)
 let tcField env (FieldDef (f, t)) = resolveType env t
 
+(** [tcMethod env m] typechecks the method [m] in environment [env]. *)
 let tcMethod env (MethodDef (MethodSig (m, x, tx, te), e)) =
   let tx' = resolveType env tx in
   let te' = resolveType env te in
   hasType (extendEnv env x tx') e te'
 
+(** [tcClass env c] typechecks the class definition [c] in
+   environment [env]. *)
 let tcClass env (ClassDef (c, i, fields, methods)) =
   let _ = resolveType env (InterfaceType i) in
   let env' = extendEnv env "this" (ClassType c) in
@@ -221,10 +225,14 @@ let tcClass env (ClassDef (c, i, fields, methods)) =
   then raise (TCError "Class does not implement its declared interface")
   (* TODO: Check for duplicates *)
 
+(** [tcMethodSig env msig] typechecks the method signature [msig]
+   in environment [env]. *)
 let tcMethodSig env (MethodSig (_, _, t1, t2)) =
   let _ = resolveType env t1 in
   resolveType env t2
 
+(** [tcInterface env i] typechecks the interface definition [i] in
+   environment [env]. *)
 let tcInterface env def =
   let rec tcInterface' env seen = function
     | InterfaceDef (i, msigs) ->
@@ -241,14 +249,18 @@ let tcInterface env def =
   in
   tcInterface' env [] def
 
+(** [tcInterface env p] typechecks the program [p] in environment
+   [env] and returns its type. *)
 let tcProgram env (Program (interfaces, classes, e)) =
   let _ = List.map (tcInterface env) interfaces in
   let _ = List.map (tcClass env) classes in
   tcExpr env e
   (* TODO: Check for duplicates *)
 
+(** [typecheck p] typechecks the program p, and returns its type.
+   Raises [TCError] if the program is not well formed. *)
 let typecheck (Program (interfaces, classes, e) as p) =
-  let iTable = buildInterfaceTable interfaces in
-  let cTable = buildClassTable classes in
+  let iTable = InterfaceTable.build interfaces in
+  let cTable = ClassTable.build classes in
   let env = newEnv iTable cTable VarTable.empty in
   tcProgram env p

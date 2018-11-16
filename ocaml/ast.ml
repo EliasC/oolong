@@ -1,11 +1,14 @@
 type className = string
-module ClassNameCmp : Set.OrderedType =
-  struct type t = className let compare = compare end
-
 type interfaceName = string
-module InterfaceNameCmp : Set.OrderedType =
-  struct type t = interfaceName let compare = compare end
+type varName = string
+type fieldName = string
+type methodName = string
+type location = int
 
+(** OOlong types: class types, interface types, the unit type and
+   the null type (which acts as a top type). Reference types are
+   unresolved before they are categorised as class or interface
+   types (i.e. before typechecking). *)
 type typ =
   | UnresolvedType of string
   | ClassType of className
@@ -20,23 +23,13 @@ let showType = function
   | UnitType -> "Unit"
   | NullType -> "Null type"
 
-type varName = string
-module VarNameCmp : Set.OrderedType =
-  struct type t = varName let compare = compare end
-
-type fieldName = string
-module FieldNameCmp : Set.OrderedType =
-  struct type t = fieldName let compare = compare end
-
-type methodName = string
-module MethodNameCmp : Set.OrderedType =
-  struct type t = methodName let compare = compare end
-
-type location = int
-
+(** OOlong expressions: null, variables, field reads and updates,
+   method calls, let expressions, object creation, upcasts,
+   concurrency, and synchronisation via locks. During evaluation,
+   expressions can also denote a held lock and the value of a
+   reference. *)
 type expr =
   | Null
-  | Loc of location
   | Var of varName
   | FieldAccess of varName * fieldName
   | FieldUpdate of varName * fieldName * expr
@@ -46,8 +39,11 @@ type expr =
   | Cast of typ * expr
   | FinishAsync of expr * expr * expr
   | Lock of varName * expr
+  (* Dynamic expressions *)
   | Locked of location * expr
+  | Loc of location
 
+(** [isVal e] returns true if [e] is a value, and false otherwise. *)
 let isVal = function
   | Null | Loc _ -> true
   | _ -> false
@@ -70,6 +66,7 @@ let rec showExpr = function
 
 let substVar x x' y = if x = x' then y else x'
 
+(** [subst x y e] replaces all occurrences of [x] in [e] with [y]. *)
 let rec subst x y = function
   | Null
     | Loc _
@@ -89,6 +86,7 @@ let rec subst x y = function
   | Lock (x', e) -> Lock (substVar x x' y, subst x y e)
   | Locked (l, e) -> Locked (l, subst x y e)
 
+(** [freeVars e] returns a list of all free variables in [e]. *)
 let freeVars e =
   let rec freeVars' = function
     | Null
@@ -108,39 +106,57 @@ let freeVars e =
   in
   List.sort_uniq compare (freeVars' e)
 
+(** Field definitions have a name and a type. *)
 type fieldDef =
   | FieldDef of fieldName * typ
 
 let showFieldDef (FieldDef (f, t)) = f ^ " : " ^ showType t
 
+(** Method signatures have a name, a typed argument and a return type. *)
 type methodSig =
   | MethodSig of methodName * varName * typ * typ
 
 let showMethodSig (MethodSig(m, x, t1, t2)) =
   m ^ "(" ^ x ^ " : " ^ showType t1 ^ ") : " ^ showType t2
 
+(** Method definitions have a signature and a method body. *)
 type methodDef =
   | MethodDef of methodSig * expr
 
 let showMethodDef (MethodDef(msig, e)) =
   "def " ^ showMethodSig msig ^ " { " ^ showExpr e ^ " } "
 
+(** A class has a name, implements an interface, and provides a
+   number of fields and methods. *)
 type classDef =
   | ClassDef of className * interfaceName * fieldDef list * methodDef list
 
+let getClassName = function ClassDef (c, _, _, _) -> c
+
+(** [intercalate s l] returns the concatenation of all strings in
+   [l], with [s] interspersed between each string (this is used
+   for printing). *)
 let rec intercalate s = function
   | [] -> ""
   | [x] -> x
   | x::xs -> x ^ s ^ intercalate s xs
 
+(** [showClassDef c] returns a string representation of c. *)
 let showClassDef (ClassDef(c, i, flds, mtds)) =
   let fields = intercalate " " (List.map (fun f -> showFieldDef f) flds) in
   let methods = intercalate " " (List.map (fun f -> showMethodDef f) mtds) in
   "class " ^ c ^ " implements " ^ i ^ " {" ^ fields ^ " " ^ methods ^ "}"
 
+(** An interface is either a "leaf interface" which provides a
+   list of method signatures, or a "branch interface" which joins
+   together two other interfaces. *)
 type interfaceDef =
   | InterfaceDef of interfaceName * methodSig list
   | ExtInterfaceDef of interfaceName * interfaceName * interfaceName
+
+let getInterfaceName = function
+  | InterfaceDef (i, _)
+    | ExtInterfaceDef (i, _, _) -> i
 
 let showInterfaceDef = function
   | InterfaceDef(i, msigs) ->
@@ -151,6 +167,9 @@ let showInterfaceDef = function
   | ExtInterfaceDef(i, i1, i2) ->
      "interface " ^ i ^ " extends " ^ i1 ^ ", " ^ i2
 
+(** An OOlong program consists of a list of interface and class
+   definitions and an expression which is run with these
+   definitions in scope. *)
 type program =
   | Program of interfaceDef list * classDef list * expr
 
