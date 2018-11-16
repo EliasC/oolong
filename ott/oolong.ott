@@ -544,21 +544,21 @@ G , x : t1 |- e2 : t
 G |- let x = e1 in e2 : t
 
 
-G(x) = t1
+G |- x : t1
 G |- e : t2 \\\\
 msigs ( t1 ) ( m ) = y : t2 --> t
 --------------------------------- :: call
 G |- x.m ( e ) : t
 
 
-|- G              MNS
-G ( x ) = t       MNS
+|- G           MNS
+G(x) = t       MNS
 --------------------- :: var
 G |- x : t
 
 
 |- G
-G ( l ) = C
+G(l) = C
 C <: t
 ------------- :: loc
 G |- l : t

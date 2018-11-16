@@ -101,7 +101,7 @@ Inductive hasType (P : program) (Gamma : env) : expr -> ty -> Prop :=
         P ; Gamma |- ENew c \in TClass c
   | T_Call :
       forall x m e t t1 t2 msigs y,
-        Gamma (env_var x) = Some t1 ->
+        P ; Gamma |- (EVar x) \in t1 ->
         methodSigs P t1 msigs ->
         methodSigLookup msigs m = Some (MethodSig m (y, t2) t) ->
         P ; Gamma |- e \in t2 ->

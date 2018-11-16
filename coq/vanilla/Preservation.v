@@ -96,12 +96,12 @@ Proof with eauto using subtypeOf with env.
     inv Hstep;
       try(malformed_context); try(inv_eq);
       try(preservation_context_tactic 2).
-    - SCase "EvalCall". clear IHhasType.
+    - SCase "EvalCall". clear IHhasType2.
+      inv hasType1.
       assert(Hsub: subtypeOf P (TClass c) t1)
       by (wfEnvLookup; rewrite_and_invert;
-          inv hasType0; wfEnvLookup;
+          inv hasType; wfEnvLookup;
           assert (c0 = c) by crush; subst; eauto).
-
       assert (wfC: wfType P (TClass c))...
       assert (cLookup: classLookup P c <> None)
         by (inv wfC; assumption).
