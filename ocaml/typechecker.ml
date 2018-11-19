@@ -156,6 +156,10 @@ let assertSubtypeOf env sub super =
 let rec inferType env = function
   | Var x -> lookupVar env x
   | Int n -> IntType
+  | Add (e1, e2)
+    | Sub (e1, e2) ->
+     let _ = checkType env e1 IntType in
+     checkType env e2 IntType
   | FieldAccess (x, f) ->
      let c = inferType env (Var x) in
      lookupField env c f

@@ -24,6 +24,8 @@
     | ";" -> Parser.SEMI
     | "," -> Parser.COMMA
     | "." -> Parser.DOT
+    | "+" -> Parser.PLUS
+    | "-" -> Parser.MINUS
 
     | s -> Parser.IDENT s
 
