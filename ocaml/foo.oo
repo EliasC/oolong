@@ -1,5 +1,16 @@
-interface Counter {}
+interface I {}
 
-class Int {}
+class Counter implements I {
+  cnt : int
 
-null
+  def set(n : int) : Unit {
+    this.cnt = n
+  }
+  def get(x : I) : int {
+    this.cnt
+  }
+}
+
+let c = new Counter in
+let tmp = c.set(42) in
+c.get(null)
