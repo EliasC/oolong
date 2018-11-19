@@ -3,8 +3,9 @@ interface I {}
 class Counter implements I {
   cnt : int
 
-  def set(n : int) : Unit {
-    this.cnt = n
+  def add(n : int) : Unit {
+    let old = this.cnt in
+    this.cnt = old + n
   }
   def get(x : I) : int {
     this.cnt
@@ -12,5 +13,5 @@ class Counter implements I {
 }
 
 let c = new Counter in
-let tmp = c.set(42) in
+let tmp = c.add(42) in
 c.get(null)

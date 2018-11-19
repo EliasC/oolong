@@ -3,37 +3,29 @@ interface Counter {
   get(x : int) : int
 }
 
-interface Num {}
-
-class int implements Num {
-  def plus(n : int) : int {
-    n
-  }
-}
-
 class Cell implements Counter {
   cnt : int
+  def init(n : int) : Unit {
+    this.cnt = n
+  }
   def add(n : int) : Unit {
     let cnt = this.cnt in
-      this.cnt = cnt.plus(n)
+      this.cnt = cnt + n
   }
-  def get(x : int) : int {
+  def get(tmp : int) : int {
     this.cnt
   }
 }
 
-let zero = new int in
-let one = new int in
-let two = new int in
 let cell = new Cell in
 let cell2 = cell in
-let tmp = cell.cnt = zero in
+let tmp = cell.init(0) in
   finish {
     async {
-      lock(cell) in cell.add(one)
+      lock(cell) in cell.add(1)
     }
     async {
-      lock(cell2) in cell2.add(two)
+      lock(cell2) in cell2.add(2)
     }
   };
-  cell.get(null)
+  cell.get(0)
