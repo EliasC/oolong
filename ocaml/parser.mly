@@ -5,6 +5,7 @@ open Ast
 /* Misc tokens */
 %token EOF
 %token <string> IDENT
+%token <int> INT
 
 /* Keywords */
 %token ASYNC
@@ -71,6 +72,7 @@ mtd:
 expr:
     | NULL { Null }
     | IDENT { Var $1 }
+    | INT { Int $1 }
     | IDENT DOT IDENT { FieldAccess ($1, $3) }
     | IDENT DOT IDENT EQ expr { FieldUpdate ($1, $3, $5) }
     | IDENT DOT IDENT LPAREN expr RPAREN { MethodCall ($1, $3, $5) }

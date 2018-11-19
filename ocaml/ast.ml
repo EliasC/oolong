@@ -13,12 +13,14 @@ type typ =
   | ClassType of className
   | InterfaceType of interfaceName
   | UnitType
+  | IntType
 
 let showType = function
   | UnresolvedType s -> "<" ^ s ^ ">"
   | ClassType c -> c
   | InterfaceType i -> i
   | UnitType -> "Unit"
+  | IntType -> "int"
 
 (** OOlong expressions: null, variables, field reads and updates,
    method calls, let expressions, object creation, upcasts,
@@ -28,6 +30,7 @@ let showType = function
 type expr =
   | Null
   | Var of varName
+  | Int of int
   | FieldAccess of varName * fieldName
   | FieldUpdate of varName * fieldName * expr
   | MethodCall of varName * methodName * expr
@@ -42,13 +45,14 @@ type expr =
 
 (** [isVal e] returns true if [e] is a value, and false otherwise. *)
 let isVal = function
-  | Null | Loc _ -> true
+  | Null | Loc _ | Int _ -> true
   | _ -> false
 
 let rec showExpr = function
   | Null -> "null"
   | Loc l -> string_of_int l
   | Var x -> x
+  | Int n -> string_of_int n
   | FieldAccess (x, f) -> x ^ "." ^ f
   | FieldUpdate (x, f, e) -> x ^ "." ^ f ^ " = " ^ showExpr e
   | MethodCall (x, m, e) -> x ^ "." ^ m ^ "(" ^ showExpr e ^ ")"
@@ -67,6 +71,7 @@ let substVar x x' y = if x = x' then y else x'
 let rec subst x y = function
   | Null
     | Loc _
+    | Int _
     | New _ as e -> e
   | Var x' -> Var (substVar x x' y)
   | FieldAccess (x', f) -> FieldAccess (substVar x x' y, f)
@@ -88,6 +93,7 @@ let freeVars e =
   let rec freeVars' = function
     | Null
       | Loc _
+      | Int _
       | New _ -> []
     | Var x
       | FieldAccess (x, _) -> [x]

@@ -9,21 +9,25 @@ exception EvaluationException of string
 type value =
   | VNull
   | VLoc of location
+  | VInt of int
 
 let showValue = function
   | VNull -> "null"
   | VLoc l -> string_of_int l
+  | VInt n -> string_of_int n
 
 (** [toValue e] converts an expression to a value. *)
 let toValue = function
   | Null -> VNull
   | Loc l -> VLoc l
+  | Int n -> VInt n
   | e -> raise (EvaluationException ("Not a value: " ^ showExpr e))
 
 (** [fromValue e] converts a value to an expression. *)
 let fromValue = function
   | VNull -> Null
   | VLoc l -> Loc l
+  | VInt n -> Int n
 (** [lookupMethod ctable c m] returns the method [m] in class [c].
    This function assumes that [c] is in the class table [ctable]. *)
 let lookupMethod ctable c m =
@@ -177,6 +181,7 @@ module Context = struct
   exception ContextException of string
   let rec extract = function
     | Null
+      | Int _
       | Loc _ -> raise (ContextException "Cannot extract a value")
     (* These expressions can be evaluated directly *)
     | Var _
@@ -199,6 +204,7 @@ module Context = struct
 
   let rec insert v = function
     | Null
+      | Int _
       | Loc _ -> raise (ContextException "Cannot insert into a value")
     (* These expressions can be replaced directly *)
     | Var _
@@ -235,6 +241,7 @@ let reduce
       (ctable : classTable)
       (heap : Heap.t) (vars : Vars.t) locks = function
   | Null
+    | Int _
     | Loc _ -> raise (EvaluationException "Cannot reduce a value")
   | Var x -> Thread (locks, fromValue (Vars.lookup vars x))
   | FieldAccess (x, f) as e ->
@@ -243,6 +250,7 @@ let reduce
       | VLoc l ->
          let obj = Heap.lookup heap l in
          Thread (locks, fromValue (Object.lookupField f obj))
+      | _ -> raise (EvaluationException "Not a reference")
      )
   | FieldUpdate (x, f, v) as e ->
      (match Vars.lookup vars x with
@@ -250,6 +258,7 @@ let reduce
       | VLoc l ->
          Heap.update heap l (Object.updateField f (toValue v));
          Thread (locks, Null)
+      | _ -> raise (EvaluationException "Not a reference")
      )
   | MethodCall (x, m, v) as e ->
      (match Vars.lookup vars x with
@@ -264,6 +273,7 @@ let reduce
          Vars.update vars this' (VLoc l);
          let body' = subst y y' (subst "this" this' body) in
          Thread (locks, body')
+      | _ -> raise (EvaluationException "Not a reference")
      )
   | Let (x, v, body) ->
      let x' = Vars.fresh vars x in
@@ -288,6 +298,7 @@ let reduce
          else
            (Heap.update heap l Object.lock;
             Thread (l :: locks, Locked (l, body)))
+      | _ -> raise (EvaluationException "Not a reference")
      )
   | Locked (l, v) ->
      Heap.update heap l Object.unlock;

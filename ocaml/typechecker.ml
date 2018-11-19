@@ -53,6 +53,7 @@ let lookupInterface env i = match env with
   well-formed. *)
 let rec resolveType env t = match t with
   | UnresolvedType "Unit" -> UnitType
+  | UnresolvedType "int" -> IntType
   | UnresolvedType s ->
      (try resolveType env (ClassType s) with
       | TCError _ ->
@@ -154,6 +155,7 @@ let assertSubtypeOf env sub super =
    type cannot be inferred. *)
 let rec inferType env = function
   | Var x -> lookupVar env x
+  | Int n -> IntType
   | FieldAccess (x, f) ->
      let c = inferType env (Var x) in
      lookupField env c f
@@ -198,6 +200,7 @@ let rec inferType env = function
    [env], and otherwise raises [TCError]. *)
 and checkType env e expected =
   match e with
+  | Null when expected = IntType -> raise (TCError "Integers cannot be null")
   | Null -> expected
   | _ ->
      let t = inferType env e in
