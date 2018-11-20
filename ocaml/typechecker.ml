@@ -128,7 +128,6 @@ let lookupMethodSig env t m =
   false. *)
 let rec isSubtypeOf env sub super =
   match sub, super with
-  | NullType, _ -> true
   | ClassType c, InterfaceType i ->
      let ClassDef (_, i', _, _) = lookupClass env c in
      isSubtypeOf env (InterfaceType i') super

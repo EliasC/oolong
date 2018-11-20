@@ -5,23 +5,20 @@ type fieldName = string
 type methodName = string
 type location = int
 
-(** OOlong types: class types, interface types, the unit type and
-   the null type (which acts as a top type). Reference types are
-   unresolved before they are categorised as class or interface
-   types (i.e. before typechecking). *)
+(** OOlong types: class types, interface types and the unit type.
+   Reference types are unresolved before they are categorised as
+   class or interface types (i.e. before typechecking). *)
 type typ =
   | UnresolvedType of string
   | ClassType of className
   | InterfaceType of interfaceName
   | UnitType
-  | NullType
 
 let showType = function
   | UnresolvedType s -> "<" ^ s ^ ">"
   | ClassType c -> c
   | InterfaceType i -> i
   | UnitType -> "Unit"
-  | NullType -> "Null type"
 
 (** OOlong expressions: null, variables, field reads and updates,
    method calls, let expressions, object creation, upcasts,
