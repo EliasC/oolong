@@ -10,7 +10,7 @@ class Cell implements Counter {
   }
   def add(n : int) : Unit {
     let cnt = this.cnt in
-      this.cnt = cnt + n
+      this.cnt = (cnt + n)
   }
   def get(tmp : int) : int {
     this.cnt
