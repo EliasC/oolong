@@ -22,8 +22,8 @@ let processFile filename =
   let channel = open_in filename in
   let lexbuf = Lexing.from_channel channel in
   let ast = Parser.main Lexer.main lexbuf in
-  let _ = typecheck ast in
-  match interpret ast !scheduler !debug_print with
+  let ast' = typecheck ast in
+  match interpret ast' !scheduler !debug_print with
   | Done ((heap, vars, threads), steps) ->
      begin
        Printf.printf "Ran for %d steps, resulting in\n%s\n"

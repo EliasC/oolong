@@ -204,35 +204,38 @@ and checkType env e expected =
      assertSubtypeOf env t expected; expected
 
 (** [tcField env f] typechecks the field [f] in environment [env]. *)
-let tcField env (FieldDef (f, t)) = resolveType env t
+let tcField env (FieldDef (f, t)) = FieldDef (f, resolveType env t)
 
 (** [tcMethod env m] typechecks the method [m] in environment [env]. *)
 let tcMethod env (MethodDef (MethodSig (m, x, tx, te), e)) =
   let tx' = resolveType env tx in
   let te' = resolveType env te in
-  checkType (extendEnv env x tx') e te'
+  let _ = checkType (extendEnv env x tx') e te' in
+  MethodDef (MethodSig (m, x, tx', te'), e)
 
 (** [tcClass env c] typechecks the class definition [c] in
    environment [env]. *)
 let tcClass env (ClassDef (c, i, fields, methods)) =
   let _ = resolveType env (InterfaceType i) in
   let env' = extendEnv env "this" (ClassType c) in
-  let _ = List.map (tcField env') fields in
-  let _ = List.map (tcMethod env') methods in
+  let fields' = List.map (tcField env') fields in
+  let methods' = List.map (tcMethod env') methods in
   let mSigs = collectMethodSigs env (lookupInterface env i) in
   let mSigEq (MethodSig (m1, _, t11, t12)) (MethodSig (m2, _, t21, t22)) =
     m1 = m2 && t11 = t21 && t12 = t22
   in
   let matchesSig msig (MethodDef (msig', _)) = mSigEq msig msig' in
   if not (List.for_all (fun mSig -> List.exists (matchesSig mSig) methods) mSigs)
-  then raise (TCError "Class does not implement its declared interface")
+  then raise (TCError "Class does not implement its declared interface");
+  ClassDef (c, i, fields', methods')
   (* TODO: Check for duplicates *)
 
 (** [tcMethodSig env msig] typechecks the method signature [msig]
    in environment [env]. *)
-let tcMethodSig env (MethodSig (_, _, t1, t2)) =
-  let _ = resolveType env t1 in
-  resolveType env t2
+let tcMethodSig env (MethodSig (m, x, t1, t2)) =
+  let t1' = resolveType env t1 in
+  let t2' = resolveType env t2 in
+  MethodSig (m, x, t1', t2')
 
 (** [tcInterface env i] typechecks the interface definition [i] in
    environment [env]. *)
@@ -241,7 +244,8 @@ let tcInterface env def =
     | InterfaceDef (i, msigs) ->
        if List.mem i seen then
          raise (TCError ("Interface inherits itself: " ^ i));
-       List.map (tcMethodSig env) msigs
+       let msigs' = List.map (tcMethodSig env) msigs in
+       InterfaceDef (i, msigs')
     | ExtInterfaceDef (i, i1, i2) ->
        if List.mem i seen then
          raise (TCError ("Interface inherits itself: " ^ i));
@@ -255,9 +259,10 @@ let tcInterface env def =
 (** [tcInterface env p] typechecks the program [p] in environment
    [env] and returns its type. *)
 let tcProgram env (Program (interfaces, classes, e)) =
-  let _ = List.map (tcInterface env) interfaces in
-  let _ = List.map (tcClass env) classes in
-  inferType env e
+  let interfaces' = List.map (tcInterface env) interfaces in
+  let classes' = List.map (tcClass env) classes in
+  let _ = inferType env e in
+  Program (interfaces', classes', e)
   (* TODO: Check for duplicates *)
 
 (** [typecheck p] typechecks the program p, and returns its type.
