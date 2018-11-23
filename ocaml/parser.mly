@@ -33,7 +33,6 @@ open Ast
 %token DOT           /* "."  */
 
 %token PLUS          /* "+"  */
-%token MINUS         /* "-"  */
 
 %start main
 
@@ -77,7 +76,6 @@ expr:
     | IDENT { Var $1 }
     | INT { Int $1 }
     | LPAREN expr PLUS expr RPAREN { Add ($2, $4) }
-    | LPAREN expr MINUS expr RPAREN { Sub ($2, $4) }
     | IDENT DOT IDENT { FieldAccess ($1, $3) }
     | IDENT DOT IDENT EQ expr { FieldUpdate ($1, $3, $5) }
     | IDENT DOT IDENT LPAREN expr RPAREN { MethodCall ($1, $3, $5) }

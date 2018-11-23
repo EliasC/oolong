@@ -25,7 +25,6 @@
     | "," -> Parser.COMMA
     | "." -> Parser.DOT
     | "+" -> Parser.PLUS
-    | "-" -> Parser.MINUS
 
     | s -> Parser.IDENT s
 
@@ -36,8 +35,8 @@ let whitespace = (' ' | '\t' | '\n')
 let letter = ['a'-'z'] | ['A'-'Z']
 let digit = ['0'-'9']
 let ident = letter (letter | '_' | digit)*
-let number = digit+
-let symbol = '=' | '(' | ')' | '{' | '}' | ':' | ';' | ',' | '.' | '+' | '-'
+let number = '-'? digit+
+let symbol = '=' | '(' | ')' | '{' | '}' | ':' | ';' | ',' | '.' | '+'
 rule main = parse
   | whitespace+ { main lexbuf }
   | (ident | symbol) as s { mk_id s }

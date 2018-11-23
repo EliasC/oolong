@@ -33,7 +33,6 @@ type expr =
   | Var of varName
   | Int of int
   | Add of expr * expr
-  | Sub of expr * expr
   | FieldAccess of varName * fieldName
   | FieldUpdate of varName * fieldName * expr
   | MethodCall of varName * methodName * expr
@@ -57,7 +56,6 @@ let rec showExpr = function
   | Var x -> x
   | Int n -> string_of_int n
   | Add (e1, e2) -> showExpr e1^" + "^showExpr e2
-  | Sub (e1, e2) -> showExpr e1^" - "^showExpr e2
   | FieldAccess (x, f) -> x ^ "." ^ f
   | FieldUpdate (x, f, e) -> x ^ "." ^ f ^ " = " ^ showExpr e
   | MethodCall (x, m, e) -> x ^ "." ^ m ^ "(" ^ showExpr e ^ ")"
@@ -80,7 +78,6 @@ let rec subst x y = function
     | New _ as e -> e
   | Var x' -> Var (substVar x x' y)
   | Add (e1, e2) -> Add (subst x y e1, subst x y e2)
-  | Sub (e1, e2) -> Sub (subst x y e1, subst x y e2)
   | FieldAccess (x', f) -> FieldAccess (substVar x x' y, f)
   | FieldUpdate (x', f, e) -> FieldUpdate (substVar x x' y, f, subst x y e)
   | MethodCall (x', m, e) -> MethodCall (substVar x x' y, m, subst x y e)
@@ -104,8 +101,7 @@ let freeVars e =
       | New _ -> []
     | Var x
       | FieldAccess (x, _) -> [x]
-    | Add (e1, e2)
-      | Sub (e1, e2) -> freeVars' e1 @ freeVars' e2
+    | Add (e1, e2) -> freeVars' e1 @ freeVars' e2
     | FieldUpdate (x, _, e)
       | MethodCall (x, _, e)
       | Lock (x, e) -> x :: freeVars' e

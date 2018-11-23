@@ -205,13 +205,10 @@ module Context = struct
       | Let (_, e', _)
       | Cast (_, e')
       | Locked (_, e') -> extract e'
-    (* Arithmetic *)
-    | Add (v1, v2)
-      | Sub (v1, v2) as e when isVal(v1) && isVal(v2) -> e
-    | Add (v1, e2)
-      | Sub (v1, e2) when isVal(v1) -> extract e2
-    | Add (e1, e2)
-      | Sub (e1, e2) -> extract e1
+    (* Addition *)
+    | Add (v1, v2) as e when isVal(v1) && isVal(v2) -> e
+    | Add (v1, e2) when isVal(v1) -> extract e2
+    | Add (e1, e2) -> extract e1
 
   let rec insert v = function
     | Null
@@ -236,12 +233,9 @@ module Context = struct
     | Cast (l, e') -> Cast (l, insert v e')
     | Locked (l, e') -> Locked (l, insert v e')
     (* Arithmetic *)
-    | Add (v1, v2)
-      | Sub (v1, v2) when isVal(v1) && isVal(v2) -> v
+    | Add (v1, v2) when isVal(v1) && isVal(v2) -> v
     | Add (v1, e2) when isVal(v1) -> Add (v1, insert v e2)
-    | Sub (v1, e2) when isVal(v1) -> Sub (v1, insert v e2)
     | Add (e1, e2) -> Add (insert v e1, e2)
-    | Sub (e1, e2) -> Sub (insert v e1, e2)
 end
 
 (** A [BlockedException] is thrown when a thread cannot progress
@@ -266,10 +260,6 @@ let reduce
      (match e1, e2 with
       | Int n1, Int n2 -> Thread (locks, Int (n1 + n2))
       | _, _ -> raise (EvaluationException "Tried to add non-ints"))
-  | Sub (e1, e2) ->
-     (match e1, e2 with
-      | Int n1, Int n2 -> Thread (locks, Int (n1 - n2))
-      | _, _ -> raise (EvaluationException "Tried to subtract non-ints"))
   | FieldAccess (x, f) as e ->
      (match Vars.lookup vars x with
       | VNull -> NullPointerException e
