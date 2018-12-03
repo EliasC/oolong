@@ -1,14 +1,12 @@
 OOlong
 ======
 
-This repository contains the Ott and Coq sources for OOlong, a
-concurrent object calculus for modelling object-oriented
+This repository contains the Ott, Coq and OCaml sources for
+OOlong, a concurrent object calculus for modelling object-oriented
 languages. The calculus was first presented in the article
 "OOlong: An Extensible Concurrent Object Calculus" (link
-forthcoming).
-
-This repository will be further updated as soon as I have finished
-writing my thesis =)
+forthcoming). An extended version of the paper also explaining the
+OCaml interpreter is under submission.
 
 The structure of this directory is as follows:
 
@@ -20,4 +18,11 @@ The structure of this directory is as follows:
 
 * `coq` contains the mechanised semantics of OOlong, both the
   "vanilla" version from the paper, and the two extensions brought
-  up in section 8.
+  up in section 8. "nullable" is explained in the extended
+  version, which will be available soon.
+
+* `ocaml` contains a prototype interpreter for OOlong. It is
+  written to have a simple _implementation_, and to allow type
+  checking and running OOlong programs. It is not meant to be
+  efficient (and error reporting could use some work). See also
+  the branch `arith`, which adds integers and addition.
